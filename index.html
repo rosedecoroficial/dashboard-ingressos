@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Ingressos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+  --bg:      #0f1117;
+  --bg2:     #161b27;
+  --bg3:     #1e2435;
+  --bg4:     #252d42;
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text:    #e2e8f5;
+  --text2:   #8892aa;
+  --text3:   #535e78;
+  --accent:  #3ecf8e;
+  --accent2: rgba(62,207,142,0.12);
+  --accent3: rgba(62,207,142,0.06);
+  --red:     #f87171;
+  --red2:    rgba(248,113,113,0.12);
+  --amber:   #fbbf24;
+  --amber2:  rgba(251,191,36,0.10);
+  --blue:    #60a5fa;
+  --blue2:   rgba(96,165,250,0.12);
+  --purple:  #a78bfa;
+  --r:       10px;
+  --r-sm:    7px;
+  --mono:    'DM Mono', monospace;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+::selection { background: var(--accent2); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.75rem; height: 56px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
+.sep { width: 1px; height: 18px; background: var(--border2); }
+.topbar-title { font-size: 13px; color: var(--text2); }
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--accent); background: var(--accent3);
+  border: 1px solid rgba(62,207,142,0.2);
+  padding: 3px 10px; border-radius: 20px;
+}
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+.last-update { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+.nav {
+  display: flex; gap: 2px; padding: 0.75rem 1.75rem;
+  border-bottom: 1px solid var(--border); overflow-x: auto;
+}
+.nav::-webkit-scrollbar { height: 0; }
+.nbtn {
+  font-size: 12px; font-weight: 500; padding: 5px 14px;
+  border-radius: 20px; border: 1px solid transparent;
+  background: transparent; color: var(--text2);
+  cursor: pointer; white-space: nowrap; transition: all .15s;
+  font-family: var(--sans);
+}
+.nbtn:hover { color: var(--text); background: var(--bg3); }
+.nbtn.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+.main { padding: 1.5rem 1.75rem; max-width: 1440px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── KPI GRID ────────────────────────────────────────────── */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.kpi {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.1rem 1.25rem;
+  transition: border-color .2s;
+}
+.kpi:hover { border-color: var(--border2); }
+.kpi-l { font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); margin-bottom: 8px; }
+.kpi-v { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--text); line-height: 1; }
+.kpi-s { font-size: 11px; color: var(--text3); margin-top: 5px; }
+.kpi-up   { color: var(--accent) !important; }
+.kpi-down { color: var(--red) !important; }
+.kpi-am   { color: var(--amber) !important; }
+
+/* ── CARDS ───────────────────────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media(max-width:900px){ .g2,.g3{ grid-template-columns:1fr; } }
+
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.25rem;
+  margin-bottom: 12px;
+}
+.card-t {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text3); margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* ── TABELA ──────────────────────────────────────────────── */
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  text-align: left; font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text3);
+  padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg3); }
+
+/* ── BADGES ──────────────────────────────────────────────── */
+.tag { display:inline-block; font-family:var(--mono); font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; }
+.tg { background:var(--accent2); color:var(--accent); border:1px solid rgba(62,207,142,.2); }
+.tr { background:var(--red2);    color:var(--red);    border:1px solid rgba(248,113,113,.2); }
+.ta { background:var(--amber2);  color:var(--amber);  border:1px solid rgba(251,191,36,.2); }
+.tb { background:var(--blue2);   color:var(--blue);   border:1px solid rgba(96,165,250,.2); }
+.tp { background:rgba(167,139,250,.1); color:var(--purple); border:1px solid rgba(167,139,250,.2); }
+
+/* ── PROGRESSO ───────────────────────────────────────────── */
+.prog-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.prog-lbl { font-size:12px; color:var(--text2); min-width:140px; }
+.prog-bg  { flex:1; height:5px; background:var(--bg4); border-radius:4px; overflow:hidden; }
+.prog-fill{ height:100%; border-radius:4px; transition:width 1.2s cubic-bezier(.4,0,.2,1); }
+.prog-pct { font-family:var(--mono); font-size:11px; font-weight:500; min-width:38px; text-align:right; }
+
+/* ── FUNIL ───────────────────────────────────────────────── */
+.fstep { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
+.fstep:last-child { border-bottom:none; }
+.fstep-l { display:flex; align-items:center; gap:10px; }
+.fstep-n {
+  width:22px; height:22px; border-radius:50%;
+  background:var(--bg4); display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:10px; color:var(--text3); flex-shrink:0;
+}
+.fstep-nm { font-size:13px; }
+.fstep-r  { text-align:right; }
+.fstep-v  { font-family:var(--mono); font-size:14px; font-weight:500; }
+.fstep-p  { font-size:11px; color:var(--text3); margin-top:2px; }
+
+/* ── CALCULADORA ─────────────────────────────────────────── */
+.calc-g { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:600px){ .calc-g{ grid-template-columns:1fr; } }
+.cf { display:flex; flex-direction:column; gap:6px; }
+.cf label { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); }
+.cf input {
+  background:var(--bg3); border:1px solid var(--border2);
+  border-radius:var(--r-sm); padding:9px 12px;
+  font-family:var(--mono); font-size:15px; color:var(--text);
+  outline:none; transition:border-color .15s;
+}
+.cf input:focus { border-color:var(--accent); }
+.calc-res { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:1.5rem; }
+.cr {
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:var(--r-sm); padding:1rem; text-align:center;
+}
+.cr-l { font-family:var(--mono); font-size:10px; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
+.cr-v { font-family:var(--mono); font-size:18px; font-weight:500; color:var(--text); }
+.cr.hi { border-color:rgba(62,207,142,.3); background:var(--accent3); }
+.cr.hi .cr-v { color:var(--accent); font-size:22px; }
+
+/* ── DIAGNÓSTICO ─────────────────────────────────────────── */
+.diag {
+  background:var(--bg3); border-left:3px solid var(--accent);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;
+  padding:.875rem 1rem; margin-bottom:8px; font-size:13px;
+}
+.diag.warn { border-color:var(--amber); }
+.diag.err  { border-color:var(--red); }
+
+/* ── CONFIG BANNER ───────────────────────────────────────── */
+.cfg-banner {
+  background:var(--amber2); border:1px solid rgba(251,191,36,.3);
+  border-radius:var(--r-sm); padding:.875rem 1.25rem;
+  font-size:12px; color:var(--amber); margin-bottom:1.25rem;
+  display:none;
+}
+.cfg-banner.show { display:block; }
+.cfg-banner code { background:rgba(251,191,36,.15); padding:2px 6px; border-radius:4px; font-family:var(--mono); }
+
+/* ── LOADING ─────────────────────────────────────────────── */
+.spin {
+  text-align:center; padding:2.5rem; color:var(--text3);
+  font-family:var(--mono); font-size:12px;
+}
+.spin::before { content:'⟳ '; animation:spin .8s linear infinite; display:inline-block; }
+@keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ─────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="logo">Launch HQ</span>
+    <div class="sep"></div>
+    <span class="topbar-title">Ingressos — Decorações Sazonais</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="last-update" id="last-update">–</span>
+    <div class="live-badge"><span class="live-dot"></span>Ao vivo</div>
+  </div>
+</div>
+
+<!-- ── NAV ───────────────────────────────────────────────── -->
+<div class="nav">
+  <button class="nbtn active" onclick="showTab('vendas',this)">Visão Geral</button>
+  <button class="nbtn" onclick="showTab('metas',this)">Metas & Projeção</button>
+  <button class="nbtn" onclick="showTab('checkout',this)">Checkout</button>
+  <button class="nbtn" onclick="showTab('trafego',this)">Tráfego Pago</button>
+  <button class="nbtn" onclick="showTab('criativos',this)">Criativos</button>
+  <button class="nbtn" onclick="showTab('utm',this)">UTMs & Origem</button>
+  <button class="nbtn" onclick="showTab('calc',this)">Calculadora</button>
+  <button class="nbtn" onclick="showTab('todas',this)">Todas as Vendas</button>
+</div>
+
+<!-- ── MAIN ──────────────────────────────────────────────── -->
+<div class="main">
+  <div id="cfg-banner" class="cfg-banner">
+    ⚠️ Script não configurado. Abra o <code>index.html</code> e troque <code>SCRIPT_URL</code> pela URL do seu Google Apps Script.
+  </div>
+
+  <!-- VISÃO GERAL -->
+  <div class="section active" id="tab-vendas">
+    <div class="kpis" id="kpi-geral"><div class="spin">carregando</div></div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-t">Vendas por produto</div>
+        <div id="lista-prod"><div class="spin">carregando</div></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Forma de pagamento</div>
+        <div style="position:relative;height:195px">
+          <canvas id="ch-metodos" role="img" aria-label="Formas de pagamento">Formas de pagamento</canvas>
+        </div>
+        <div id="leg-metodos" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t">Vendas por dia</div>
+      <div style="position:relative;height:185px">
+        <canvas id="ch-diario" role="img" aria-label="Vendas por dia">Vendas por dia</canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- METAS -->
+  <div class="section" id="tab-metas">
+    <div class="kpis" id="kpi-metas"></div>
+    <div class="card">
+      <div class="card-t">Progresso das metas</div>
+      <div id="prog-metas"></div>
+    </div>
+    <div class="card" id="card-diag">
+      <div class="card-t">Diagnóstico</div>
+      <div id="diagnostico"></div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT -->
+  <div class="section" id="tab-checkout">
+    <div class="kpis" id="kpi-checkout"></div>
+    <div class="card">
+      <div class="card-t">Funil de checkout</div>
+      <div id="funil"></div>
+    </div>
+  </div>
+
+  <!-- TRÁFEGO -->
+  <div class="section" id="tab-trafego">
+    <div id="aviso-trafego" style="display:none" class="cfg-banner show"></div>
+    <div class="kpis" id="kpi-trafego"><div class="spin">carregando</div></div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-t">Funil de conversão (acumulado)</div>
+        <div id="funil-trafego"></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Gasto diário (R$)</div>
+        <div style="position:relative;height:195px">
+          <canvas id="ch-gasto-dia" role="img" aria-label="Gasto diário">Gasto por dia</canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t">Performance por campanha</div>
+      <div class="tw" id="tbl-campanhas"><div class="spin">carregando</div></div>
+    </div>
+    <div class="card">
+      <div class="card-t">Performance por conjunto (Ad Set)</div>
+      <div class="tw" id="tbl-conjuntos"><div class="spin">carregando</div></div>
+    </div>
+  </div>
+
+  <!-- CRIATIVOS -->
+  <div class="section" id="tab-criativos">
+    <div class="kpis" id="kpi-criativos"><div class="spin">carregando</div></div>
+    <div class="card">
+      <div class="card-t">Top criativos — clique para ver funil de vídeo</div>
+      <div class="tw" id="tbl-criativos"><div class="spin">carregando</div></div>
+    </div>
+    <div class="card">
+      <div class="card-t">Funil de retenção de vídeo <span id="criativo-sel" style="color:var(--accent);margin-left:8px;font-size:10px;font-weight:400"></span></div>
+      <div id="funil-video-bars"><div style="font-size:12px;color:var(--text3);padding:.5rem 0">Clique em um criativo na tabela acima para ver o funil de vídeo</div></div>
+    </div>
+  </div>
+
+  <!-- UTM -->
+  <div class="section" id="tab-utm">
+    <div class="card">
+      <div class="card-t">Vendas por campanha / UTM</div>
+      <div class="tw" id="tbl-utm"><div class="spin">carregando</div></div>
+    </div>
+  </div>
+
+  <!-- CALCULADORA -->
+  <div class="section" id="tab-calc">
+    <div class="card">
+      <div class="card-t">Simulador de projeção</div>
+      <div class="calc-g">
+        <div class="cf"><label>Visitas ao checkout</label><input type="number" id="c-vis" value="3000" oninput="calc()"></div>
+        <div class="cf"><label>Taxa de conversão (%)</label><input type="number" id="c-conv" value="7" step="0.1" oninput="calc()"></div>
+        <div class="cf"><label>Ticket médio (R$)</label><input type="number" id="c-tick" value="197" oninput="calc()"></div>
+        <div class="cf"><label>Taxa order bump (%)</label><input type="number" id="c-btx" value="30" oninput="calc()"></div>
+        <div class="cf"><label>Valor order bump (R$)</label><input type="number" id="c-bv" value="47" oninput="calc()"></div>
+        <div class="cf"><label>Investimento tráfego (R$)</label><input type="number" id="c-inv" value="2000" oninput="calc()"></div>
+      </div>
+      <div class="calc-res">
+        <div class="cr"><div class="cr-l">Vendas previstas</div><div class="cr-v" id="r-v">—</div></div>
+        <div class="cr"><div class="cr-l">Faturamento principal</div><div class="cr-v" id="r-f">—</div></div>
+        <div class="cr"><div class="cr-l">Receita order bump</div><div class="cr-v" id="r-b">—</div></div>
+        <div class="cr hi"><div class="cr-l">Total projetado</div><div class="cr-v" id="r-t">—</div></div>
+        <div class="cr"><div class="cr-l">ROAS projetado</div><div class="cr-v" id="r-r">—</div></div>
+        <div class="cr"><div class="cr-l">Lucro estimado</div><div class="cr-v" id="r-l">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAS AS VENDAS -->
+  <div class="section" id="tab-todas">
+    <div class="card">
+      <div class="card-t">Todas as vendas <span id="total-vendas-txt" style="color:var(--accent);margin-left:6px"></span></div>
+      <div class="tw" id="tbl-vendas"><div class="spin">carregando</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ⚙️  COLE AQUI A URL DO SEU GOOGLE APPS SCRIPT ─────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwZjoCLt7p-LSs__ZNCEjZQG7Rb0T_Y5HduDYgs4CWPA9wcK4JscE8JeArxTN5yYTGxrQ/exec';
+// ───────────────────────────────────────────────────────────
+
+const R = (v) => Math.round(v * 100) / 100;
+const BRL = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+const PCT = (v) => Number(v).toFixed(1) + '%';
+const CORES = ['#3ecf8e','#60a5fa','#fbbf24','#f87171','#a78bfa','#fb923c','#34d399','#e879f9'];
+const MET = { pix: 'PIX', credit_card: 'Cartão', boleto: 'Boleto', outro: 'Outro' };
+const STATUS_TAG = {
+  paid:     '<span class="tag tg">Pago</span>',
+  refunded: '<span class="tag tr">Reembolsado</span>',
+  overdue:  '<span class="tag ta">Expirado</span>',
+  disputed: '<span class="tag tp">Disputa</span>',
+};
+
+let chMetodos = null, chDiario = null;
+let _resumo = null;
+
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nbtn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+async function api(acao) {
+  const url = SCRIPT_URL + '?acao=' + acao + '&t=' + Date.now();
+  const r = await fetch(url);
+  return r.json();
+}
+
+// ── INICIALIZA ───────────────────────────────────────────
+async function init() {
+  if (SCRIPT_URL.includes('COLE_AQUI')) {
+    document.getElementById('cfg-banner').classList.add('show');
+    return;
+  }
+  await Promise.all([carregarResumo(), carregarVendas(), carregarTrafego()]);
+}
+
+// ── RESUMO ───────────────────────────────────────────────
+async function carregarResumo() {
+  try {
+    const d = await api('resumo');
+    _resumo = d;
+    document.getElementById('last-update').textContent =
+      '↻ ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const cfg = d.config || {};
+
+    // KPIs gerais
+    document.getElementById('kpi-geral').innerHTML = [
+      kpi('Faturamento', BRL(d.faturamento), '', BRL(cfg.meta_faturamento || 0) + ' meta'),
+      kpi('Vendas confirmadas', d.qtd_vendas, '', (cfg.meta_vendas || 0) + ' meta'),
+      kpi('Ticket médio', BRL(d.ticket_medio)),
+      kpi('Reembolsos', d.reembolsos_qtd, d.reembolsos_qtd > 0 ? 'kpi-down' : ''),
+      kpi('Val. reembolsado', BRL(d.reembolsos_valor), d.reembolsos_valor > 0 ? 'kpi-down' : ''),
+    ].join('');
+
+    // Produtos
+    document.getElementById('lista-prod').innerHTML = (d.por_produto || []).length
+      ? (d.por_produto || []).map(p => `
+          <div class="fstep">
+            <span style="font-size:13px;color:var(--text2)">${encurtarProd(p.nome)}</span>
+            <span style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--mono);font-size:13px;font-weight:500">${p.qtd} un</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${BRL(p.total)}</span>
+            </span>
+          </div>`).join('')
+      : '<div class="spin">sem vendas ainda</div>';
+
+    // Gráfico métodos
+    const mLabels = (d.por_metodo || []).map(m => MET[m.metodo] || m.metodo);
+    const mData   = (d.por_metodo || []).map(m => m.qtd);
+    if (chMetodos) chMetodos.destroy();
+    chMetodos = new Chart(document.getElementById('ch-metodos'), {
+      type: 'doughnut',
+      data: { labels: mLabels, datasets: [{ data: mData, backgroundColor: CORES, borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { display: false } } }
+    });
+    document.getElementById('leg-metodos').innerHTML = mLabels.map((l, i) =>
+      `<span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <span style="width:8px;height:8px;border-radius:2px;background:${CORES[i]};flex-shrink:0"></span>${l} ${mData[i]}
+       </span>`).join('');
+
+    // Gráfico diário
+    const dLabels = (d.vendas_por_dia || []).map(x => x.data.slice(5));
+    const dData   = (d.vendas_por_dia || []).map(x => x.qtd);
+    if (chDiario) chDiario.destroy();
+    chDiario = new Chart(document.getElementById('ch-diario'), {
+      type: 'bar',
+      data: { labels: dLabels, datasets: [{
+        label: 'Vendas', data: dData,
+        backgroundColor: 'rgba(62,207,142,.7)', borderRadius: 5, borderWidth: 0,
+      }]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#535e78', font: { size: 10, family: "'DM Mono'" } } },
+          y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#535e78', font: { size: 10, family: "'DM Mono'" } } },
+        }
+      }
+    });
+
+    // Metas
+    renderMetas(d, cfg);
+    // Checkout
+    renderCheckout(d);
+    // UTMs
+    renderUTM(d);
+
+  } catch(e) {
+    document.getElementById('cfg-banner').classList.add('show');
+  }
+}
+
+function encurtarProd(nome) {
+  if (!nome) return '—';
+  if (nome.length > 38) return nome.slice(0, 36) + '…';
+  return nome;
+}
+
+function kpi(label, valor, cls = '', sub = '') {
+  return `<div class="kpi">
+    <div class="kpi-l">${label}</div>
+    <div class="kpi-v ${cls}">${valor}</div>
+    ${sub ? `<div class="kpi-s">${sub}</div>` : ''}
+  </div>`;
+}
+
+// ── METAS ────────────────────────────────────────────────
+function renderMetas(d, cfg) {
+  const metaFat    = cfg.meta_faturamento || 0;
+  const metaVend   = cfg.meta_vendas || 0;
+  const pFat       = metaFat ? Math.min(100, d.faturamento / metaFat * 100) : 0;
+  const pVend      = metaVend ? Math.min(100, d.qtd_vendas / metaVend * 100) : 0;
+
+  const hoje   = new Date();
+  const fim    = new Date(cfg.data_fim || '');
+  const inicio = new Date(cfg.data_inicio || '');
+  const dias   = isNaN(fim) ? '–' : Math.max(0, Math.ceil((fim - hoje) / 86400000));
+  const diasP  = isNaN(inicio) ? 0 : Math.max(1, Math.ceil((hoje - inicio) / 86400000));
+  const diasT  = isNaN(inicio) || isNaN(fim) ? 0 : Math.ceil((fim - inicio) / 86400000);
+  const ritmo  = diasP > 0 ? d.faturamento / diasP : 0;
+  const proj   = diasT > 0 ? R(ritmo * diasT) : 0;
+  const pProj  = metaFat ? Math.min(100, proj / metaFat * 100) : 0;
+
+  document.getElementById('kpi-metas').innerHTML = [
+    kpi('Meta faturamento', BRL(metaFat)),
+    kpi('Realizado', BRL(d.faturamento), pFat >= 100 ? 'kpi-up' : ''),
+    kpi('Projeção final', BRL(proj), pProj >= 100 ? 'kpi-up' : 'kpi-down'),
+    kpi('Dias restantes', dias, dias !== '–' && dias <= 3 ? 'kpi-down' : ''),
+    kpi('Vendas / meta', `${d.qtd_vendas} / ${metaVend}`, pVend >= 100 ? 'kpi-up' : ''),
+  ].join('');
+
+  document.getElementById('prog-metas').innerHTML = [
+    progRow('Faturamento', pFat, `${BRL(d.faturamento)} de ${BRL(metaFat)}`),
+    progRow('Vendas', pVend, `${d.qtd_vendas} de ${metaVend}`),
+    progRow('Ticket médio', metaFat ? Math.min(100, d.ticket_medio / (metaFat / metaVend || 1) * 100) : 0,
+      `${BRL(d.ticket_medio)} atual`),
+  ].join('');
+
+  // Diagnóstico automático
+  const diags = [];
+  if (pFat < 30) diags.push({ tipo:'err', msg:'Faturamento abaixo de 30% da meta. Revisar urgente oferta/tráfego.' });
+  else if (pFat < 60) diags.push({ tipo:'warn', msg:'Ritmo abaixo do esperado. Considere aumentar investimento ou melhorar a página.' });
+  else diags.push({ tipo:'ok', msg:'Bom ritmo de vendas. Mantenha o investimento e monitore o ticket médio.' });
+
+  if (d.reembolsos_qtd > d.qtd_vendas * 0.05)
+    diags.push({ tipo:'warn', msg:`Reembolsos acima de 5% (${d.reembolsos_qtd}). Verificar qualidade da oferta.` });
+
+  document.getElementById('diagnostico').innerHTML = diags.map(x =>
+    `<div class="diag ${x.tipo === 'err' ? 'err' : x.tipo === 'warn' ? 'warn' : ''}">${x.msg}</div>`
+  ).join('');
+
+  // ── Projeção do infoproduto ─────────────────────────────
+  const iPreco   = METAS.infoproduto_preco    || 997;
+  const iConvMin = METAS.infoproduto_conv_min || 5;
+  const iConvMax = METAS.infoproduto_conv_max || 10;
+  const vendas   = d.qtd_vendas || 0;
+
+  // Projeção com base nas vendas atuais de ingresso
+  const iMin = Math.round(vendas * iConvMin / 100);
+  const iMax = Math.round(vendas * iConvMax / 100);
+  const iFatMin = iMin * iPreco;
+  const iFatMax = iMax * iPreco;
+
+  // Projeção com base na meta total de ingressos
+  const iMinMeta = Math.round(metaVend * iConvMin / 100);
+  const iMaxMeta = Math.round(metaVend * iConvMax / 100);
+  const iMetaMin = iMinMeta * iPreco;
+  const iMetaMax = iMaxMeta * iPreco;
+
+  const existingCard = document.getElementById('card-infoproduto');
+  const infoHTML = `<div class="card" id="card-infoproduto" style="margin-top:12px;border-color:rgba(167,139,250,.25)">
+    <div class="card-t" style="color:var(--purple)">Projeção infoproduto — R$ ${BRL(iPreco)} (${iConvMin}% a ${iConvMax}% de conversão)</div>
+    <div class="kpis" style="margin-bottom:.75rem">
+      ${kpi('Compradores atuais', vendas, '', 'base atual')}
+      ${kpi('Conversões min.', iMin, '', BRL(iFatMin))}
+      ${kpi('Conversões máx.', iMax, 'kpi-up', BRL(iFatMax))}
+      ${kpi('Fat. extra (min)', BRL(iFatMin), '', 'cenário conservador')}
+      ${kpi('Fat. extra (máx)', BRL(iFatMax), 'kpi-up', 'cenário otimista')}
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:.75rem">Projeção com <strong style="color:var(--text2)">${metaVend} ingressos</strong> vendidos (meta total):</div>
+    <div class="kpis">
+      ${kpi('Vendas info (min)', iMinMeta, '', BRL(iMetaMin))}
+      ${kpi('Vendas info (máx)', iMaxMeta, 'kpi-up', BRL(iMetaMax))}
+      ${kpi('Total lançamento (min)', BRL(metaFat + iMetaMin), '', 'ingressos + info')}
+      ${kpi('Total lançamento (máx)', BRL(metaFat + iMetaMax), 'kpi-up', 'ingressos + info')}
+    </div>
+  </div>`;
+
+  if (existingCard) existingCard.outerHTML = infoHTML;
+  else document.getElementById('card-diag').insertAdjacentHTML('afterend', infoHTML);
+}
+
+function progRow(lbl, pct_val, sub) {
+  const cor = pct_val >= 80 ? 'var(--accent)' : pct_val >= 50 ? 'var(--amber)' : 'var(--red)';
+  return `<div class="prog-row">
+    <div style="min-width:140px">
+      <div style="font-size:13px">${lbl}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:1px">${sub}</div>
+    </div>
+    <div class="prog-bg"><div class="prog-fill" style="width:${pct_val}%;background:${cor}"></div></div>
+    <div class="prog-pct" style="color:${cor}">${Math.round(pct_val)}%</div>
+  </div>`;
+}
+
+// ── CHECKOUT ─────────────────────────────────────────────
+function renderCheckout(d) {
+  const total  = (d.faturas_criadas !== undefined) ? d.faturas_criadas : (d.qtd_vendas || 0);
+  const pagas  = d.qtd_vendas || 0;
+  const aban   = total - pagas;
+  const conv   = total ? R(pagas / total * 100) : 0;
+  const reemb  = d.reembolsos_qtd || 0;
+
+  document.getElementById('kpi-checkout').innerHTML = [
+    kpi('Faturas criadas', total),
+    kpi('Pagas', pagas, 'kpi-up'),
+    kpi('Abandonos', aban, aban > pagas ? 'kpi-down' : ''),
+    kpi('Taxa de conversão', PCT(conv), conv >= 5 ? 'kpi-up' : 'kpi-down'),
+    kpi('Reembolsos', reemb, reemb > 0 ? 'kpi-down' : ''),
+  ].join('');
+
+  document.getElementById('funil').innerHTML = [
+    fstep(1, 'Faturas geradas', total, '100%', 'tb'),
+    fstep(2, 'Pagamentos confirmados', pagas, PCT(conv), 'tg'),
+    fstep(3, 'Abandonos / expirados', aban, PCT(total ? aban / total * 100 : 0), 'tr'),
+    fstep(4, 'Reembolsos', reemb, reemb && pagas ? PCT(reemb / pagas * 100) : '—', 'ta'),
+  ].join('');
+}
+
+function fstep(n, nome, val, p, tagCls) {
+  return `<div class="fstep">
+    <div class="fstep-l">
+      <div class="fstep-n">${n}</div>
+      <div class="fstep-nm">${nome}</div>
+    </div>
+    <div class="fstep-r">
+      <div class="fstep-v">${val}</div>
+      <div class="fstep-p"><span class="tag ${tagCls}">${p}</span></div>
+    </div>
+  </div>`;
+}
+
+// ── UTM ──────────────────────────────────────────────────
+function renderUTM(d) {
+  // Agrega UTMs das vendas já carregadas em _vendas
+  // Aqui mostramos a tabela de vendas por produto/origem simples
+  const por = {};
+  (_vendas || []).filter(v => v.status === 'paid').forEach(v => {
+    const k = v.campanha || '(sem campanha)';
+    por[k] = por[k] || { source: v.source || '—', qtd: 0, total: 0 };
+    por[k].qtd++;
+    por[k].total += v.valor || 0;
+  });
+  const rows = Object.entries(por).sort((a,b) => b[1].total - a[1].total);
+  if (!rows.length) {
+    document.getElementById('tbl-utm').innerHTML = '<div class="spin">sem dados de UTM ainda</div>';
+    return;
+  }
+  document.getElementById('tbl-utm').innerHTML = `<table>
+    <thead><tr><th>Campanha</th><th>Source</th><th>Vendas</th><th>Faturamento</th></tr></thead>
+    <tbody>${rows.map(([k,v]) => `<tr>
+      <td>${k}</td><td style="color:var(--text3)">${v.source}</td>
+      <td><strong>${v.qtd}</strong></td>
+      <td style="font-family:var(--mono)"><strong>${BRL(v.total)}</strong></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── VENDAS ───────────────────────────────────────────────
+let _vendas = [];
+async function carregarVendas() {
+  try {
+    const rows = await api('vendas');
+    _vendas = rows;
+    document.getElementById('total-vendas-txt').textContent = rows.length + ' vendas';
+
+    if (!rows.length) {
+      document.getElementById('tbl-vendas').innerHTML = '<div class="spin">nenhuma venda ainda</div>';
+      return;
+    }
+    document.getElementById('tbl-vendas').innerHTML = `<table>
+      <thead><tr>
+        <th>Data</th><th>Produto</th><th>Valor</th><th>Método</th>
+        <th>Comprador</th><th>Campanha</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${r.data || '—'}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${encurtarProd(r.produto)}</td>
+        <td style="font-family:var(--mono)">${BRL(r.valor)}</td>
+        <td>${MET[r.metodo] || r.metodo || '—'}</td>
+        <td style="color:var(--text3);font-size:12px">${r.comprador || '—'}</td>
+        <td style="color:var(--text3);font-size:11px;font-family:var(--mono)">${r.campanha || '—'}</td>
+        <td>${STATUS_TAG[r.status] || `<span class="tag tb">${r.status}</span>`}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch(e) {}
+}
+
+// ── TRÁFEGO ──────────────────────────────────────────────
+let chGastoDia = null;
+let _trafego = null;
+
+async function carregarTrafego() {
+  try {
+    const d = await api('trafego');
+    _trafego = d;
+
+    if (!d.resumo || !d.criativos) {
+      document.getElementById('kpi-trafego').innerHTML =
+        '<div class="spin">crie a aba "trafego" na planilha com dados do Adveronix</div>';
+      return;
+    }
+
+    const r = d.resumo;
+
+    // KPIs tráfego
+    const roasTag = r.roas >= 3 ? 'kpi-up' : r.roas >= 2 ? 'kpi-am' : 'kpi-down';
+    document.getElementById('kpi-trafego').innerHTML = [
+      kpi('Investimento total', BRL(r.total_spent)),
+      kpi('Compras (pixel)', r.total_purchases, r.total_purchases > 0 ? 'kpi-up' : ''),
+      kpi('ROAS', r.roas + 'x', roasTag, 'meta: 3x+'),
+      kpi('CPA (custo/compra)', BRL(r.cpp), r.cpp < 80 ? 'kpi-up' : 'kpi-down'),
+      kpi('CTR', PCT(r.ctr), r.ctr >= 1.5 ? 'kpi-up' : r.ctr >= 1 ? 'kpi-am' : 'kpi-down'),
+      kpi('CPC', BRL(r.cpc)),
+      kpi('CPM', BRL(r.cpm)),
+      kpi('LP Views', r.total_lp_views),
+      kpi('Conv. LP→Compra', PCT(r.conv_lp)),
+    ].join('');
+
+    // Funil de conversão
+    const ftRows = [
+      { n:1, nome:'Impressões',      val: r.total_impressions.toLocaleString('pt-BR'), pct:'100%', cls:'tb' },
+      { n:2, nome:'Cliques no link', val: r.total_clicks.toLocaleString('pt-BR'),
+        pct: PCT(r.ctr), cls:'tb' },
+      { n:3, nome:'Landing Page Views', val: r.total_lp_views.toLocaleString('pt-BR'),
+        pct: r.total_clicks ? PCT(r.total_lp_views/r.total_clicks*100) : '—', cls:'ta' },
+      { n:4, nome:'Compras confirmadas', val: r.total_purchases,
+        pct: PCT(r.conv_lp), cls:'tg' },
+    ];
+    document.getElementById('funil-trafego').innerHTML =
+      ftRows.map(x => fstep(x.n, x.nome, x.val, x.pct, x.cls)).join('');
+
+    // Gráfico gasto por dia
+    const dias   = (d.por_dia || []).map(x => x.dia.slice(5));
+    const gastos = (d.por_dia || []).map(x => x.spent);
+    if (chGastoDia) chGastoDia.destroy();
+    chGastoDia = new Chart(document.getElementById('ch-gasto-dia'), {
+      type: 'bar',
+      data: { labels: dias, datasets: [{
+        label:'Gasto', data: gastos,
+        backgroundColor:'rgba(251,191,36,.7)', borderRadius:5, borderWidth:0,
+      }]},
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ grid:{ color:'rgba(255,255,255,.04)' }, ticks:{ color:'#535e78', font:{ size:10, family:"'DM Mono'" } } },
+          y:{ grid:{ color:'rgba(255,255,255,.04)' }, ticks:{ color:'#535e78', font:{ size:10, family:"'DM Mono'" },
+            callback: v => 'R$' + v } },
+        }
+      }
+    });
+
+    // Tabela campanhas
+    renderTabelaPerf('tbl-campanhas', d.campanhas || []);
+
+    // Tabela conjuntos
+    renderTabelaPerf('tbl-conjuntos', d.conjuntos || []);
+
+    // Criativos
+    renderCriativos(d.criativos || []);
+
+  } catch(e) {
+    document.getElementById('aviso-trafego').style.display = 'block';
+    document.getElementById('aviso-trafego').textContent = '⚠️ Erro ao carregar tráfego. Verifique a aba "trafego" na planilha.';
+  }
+}
+
+function renderTabelaPerf(elId, rows) {
+  if (!rows.length) {
+    document.getElementById(elId).innerHTML = '<div class="spin">sem dados</div>';
+    return;
+  }
+  document.getElementById(elId).innerHTML = `<table>
+    <thead><tr>
+      <th>Nome</th><th>Gasto</th><th>Impressões</th>
+      <th>Cliques</th><th>CTR</th><th>LP Views</th>
+      <th>Compras</th><th>CPA</th><th>ROAS</th>
+    </tr></thead>
+    <tbody>${rows.map(r => {
+      const roasCls = r.roas >= 3 ? 'color:var(--accent)' : r.roas >= 2 ? 'color:var(--amber)' : 'color:var(--red)';
+      const cpaCls  = r.cpp < 80 ? 'color:var(--accent)' : r.cpp < 120 ? 'color:var(--amber)' : 'color:var(--red)';
+      return `<tr>
+        <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.nome}</td>
+        <td style="font-family:var(--mono)">${BRL(r.spent)}</td>
+        <td style="font-family:var(--mono);color:var(--text3)">${r.impressions.toLocaleString('pt-BR')}</td>
+        <td style="font-family:var(--mono)">${r.clicks.toLocaleString('pt-BR')}</td>
+        <td style="font-family:var(--mono)">${PCT(r.ctr)}</td>
+        <td style="font-family:var(--mono);color:var(--text3)">${r.lp_views.toLocaleString('pt-BR')}</td>
+        <td style="font-family:var(--mono);font-weight:600">${r.purchases}</td>
+        <td style="font-family:var(--mono);${cpaCls}">${r.cpp ? BRL(r.cpp) : '—'}</td>
+        <td style="font-family:var(--mono);${roasCls}">${r.roas ? r.roas + 'x' : '—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function renderCriativos(criativos) {
+  if (!criativos.length) {
+    document.getElementById('kpi-criativos').innerHTML = '<div class="spin">sem dados de criativos</div>';
+    document.getElementById('tbl-criativos').innerHTML = '';
+    return;
+  }
+
+  // KPIs do melhor criativo
+  const melhor = criativos[0];
+  document.getElementById('kpi-criativos').innerHTML = [
+    kpi('Total criativos', criativos.length),
+    kpi('Melhor CPA', melhor.cpp ? BRL(melhor.cpp) : '—', 'kpi-up', melhor.nome.slice(0,22) + '…'),
+    kpi('Melhor ROAS', melhor.roas ? melhor.roas + 'x' : '—', 'kpi-up'),
+    kpi('Maior Hook Rate', PCT(Math.max(...criativos.map(c=>c.hook_rate))), 'kpi-up', '% assistiu 25%+'),
+    kpi('Maior Hold Rate', PCT(Math.max(...criativos.map(c=>c.hold_rate))), '', '% completou o vídeo'),
+  ].join('');
+
+  // Tabela criativos
+  document.getElementById('tbl-criativos').innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>Criativo (Ad Name)</th><th>Gasto</th><th>Compras</th>
+      <th>CPA</th><th>ROAS</th><th>CTR</th><th>Hook Rate</th><th>Hold Rate</th><th>Ação</th>
+    </tr></thead>
+    <tbody>${criativos.map((r, i) => {
+      const roasCls = r.roas >= 3 ? 'color:var(--accent)' : r.roas >= 2 ? 'color:var(--amber)' : 'color:var(--red)';
+      const cpaCls  = r.cpp < 80 ? 'color:var(--accent)' : r.cpp < 120 ? 'color:var(--amber)' : 'color:var(--red)';
+      const acao    = r.purchases >= 3 && r.roas >= 3
+        ? '<span class="tag tg">Escalar</span>'
+        : r.purchases >= 1
+          ? '<span class="tag ta">Manter</span>'
+          : '<span class="tag tr">Pausar</span>';
+      return `<tr style="cursor:pointer" onclick="mostrarFunilVideo(${i})" title="Ver funil de vídeo">
+        <td style="font-family:var(--mono);color:var(--text3)">${i+1}</td>
+        <td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.nome}</td>
+        <td style="font-family:var(--mono)">${BRL(r.spent)}</td>
+        <td style="font-family:var(--mono);font-weight:600">${r.purchases}</td>
+        <td style="font-family:var(--mono);${cpaCls}">${r.cpp ? BRL(r.cpp) : '—'}</td>
+        <td style="font-family:var(--mono);${roasCls}">${r.roas ? r.roas + 'x' : '—'}</td>
+        <td style="font-family:var(--mono)">${PCT(r.ctr)}</td>
+        <td style="font-family:var(--mono)">${PCT(r.hook_rate)}</td>
+        <td style="font-family:var(--mono)">${PCT(r.hold_rate)}</td>
+        <td>${acao}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function mostrarFunilVideo(idx) {
+  const criativos = (_trafego && _trafego.criativos) || [];
+  if (!criativos[idx]) return;
+  const c = criativos[idx];
+  document.getElementById('criativo-sel').textContent = c.nome;
+  const fv = c.funil_v || {};
+  const bars = [
+    { label:'25%', val: fv.p25, cor:'var(--blue)' },
+    { label:'50%', val: fv.p50, cor:'var(--accent)' },
+    { label:'75%', val: fv.p75, cor:'var(--amber)' },
+    { label:'95%', val: fv.p95, cor:'var(--purple)' },
+    { label:'100%',val: fv.p100,cor:'var(--red)' },
+  ];
+  document.getElementById('funil-video-bars').innerHTML = bars.map(b => `
+    <div class="prog-row">
+      <div class="prog-lbl" style="min-width:50px;font-family:var(--mono)">${b.label}</div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${b.val}%;background:${b.cor}"></div></div>
+      <div class="prog-pct" style="color:${b.cor}">${PCT(b.val)}</div>
+    </div>`).join('');
+
+  // Muda para a aba de criativos se não estiver lá
+  const tab = document.getElementById('tab-criativos');
+  if (!tab.classList.contains('active')) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nbtn').forEach(b => b.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector('[onclick*="criativos"]').classList.add('active');
+  }
+  document.getElementById('funil-video-bars').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── CALCULADORA ──────────────────────────────────────────
+function calc() {
+  const vis  = +document.getElementById('c-vis').value  || 0;
+  const conv = +document.getElementById('c-conv').value || 0;
+  const tick = +document.getElementById('c-tick').value || 0;
+  const btx  = +document.getElementById('c-btx').value  || 0;
+  const bv   = +document.getElementById('c-bv').value   || 0;
+  const inv  = +document.getElementById('c-inv').value  || 0;
+  const vend = Math.round(vis * conv / 100);
+  const fat  = vend * tick;
+  const bump = Math.round(vend * btx / 100) * bv;
+  const tot  = fat + bump;
+  const roas = inv ? R(tot / inv) : '—';
+  const luc  = inv ? R(tot - inv) : tot;
+  document.getElementById('r-v').textContent = vend;
+  document.getElementById('r-f').textContent = BRL(fat);
+  document.getElementById('r-b').textContent = BRL(bump);
+  document.getElementById('r-t').textContent = BRL(tot);
+  document.getElementById('r-r').textContent = roas !== '—' ? roas + 'x' : '—';
+  document.getElementById('r-l').textContent = BRL(luc);
+}
+
+// ── BOOT ─────────────────────────────────────────────────
+init();
+calc();
+// Auto-refresh a cada 60s
+setInterval(() => { carregarResumo(); carregarVendas(); }, 60000);
+</script>
+</body>
+</html>
