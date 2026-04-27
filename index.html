@@ -253,10 +253,20 @@ tbody tr:hover td { background: var(--bg3); }
       </div>
       <div>
         <div class="card" style="margin-bottom:14px">
-          <div class="card-t">Vendas por dia</div>
+          <div class="card-t">
+            Vendas por dia vs meta
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:10px;color:var(--text3)">meta/dia:</span>
+              <input type="number" id="meta-diaria" value="35" min="1" max="500"
+                style="width:52px;background:var(--bg4);border:1px solid var(--border2);border-radius:4px;
+                padding:2px 6px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;text-align:center"
+                oninput="atualizarPace()">
+            </div>
+          </div>
           <div style="position:relative;height:160px">
             <canvas id="ch-dias" role="img" aria-label="Vendas por dia">Vendas por dia</canvas>
           </div>
+          <div id="pace-status" style="margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--text3)"></div>
         </div>
         <div class="card">
           <div class="card-t">Gasto diário (R$)</div>
@@ -348,25 +358,52 @@ tbody tr:hover td { background: var(--bg3); }
 
   <!-- ══ CALCULADORA ══ -->
   <div class="section" id="tab-calc">
-    <div class="card">
-      <div class="card-t">Simulador de projeção</div>
-      <div class="calc-g">
-        <div class="cf"><label>Visitas (LP Views)</label><input type="number" id="c-vis" value="5000" oninput="calc()"></div>
-        <div class="cf"><label>Taxa de conversão (%)</label><input type="number" id="c-conv" value="7" step="0.1" oninput="calc()"></div>
-        <div class="cf"><label>Ticket médio (R$)</label><input type="number" id="c-tick" value="27" oninput="calc()"></div>
-        <div class="cf"><label>Taxa order bump (%)</label><input type="number" id="c-btx" value="40" oninput="calc()"></div>
-        <div class="cf"><label>Valor order bump (R$)</label><input type="number" id="c-bv" value="10" oninput="calc()"></div>
-        <div class="cf"><label>Investimento tráfego (R$)</label><input type="number" id="c-inv" value="2000" oninput="calc()"></div>
+
+    <!-- Bloco 1: Calculadora de CPA -->
+    <div class="g2" style="align-items:start">
+      <div class="hcard">
+        <div class="card-t">Calculadora de CPA</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="cf"><label>CPM — Custo por 1.000 impressões (R$)</label><input type="number" id="cc-cpm" value="18.20" step="0.01" oninput="calcCPA()"></div>
+          <div class="cf"><label>CTR — Taxa de clique (%)</label><input type="number" id="cc-ctr" value="0.90" step="0.01" oninput="calcCPA()"></div>
+          <div class="cf"><label>CR — Taxa de conexão LP (%)</label><input type="number" id="cc-cr" value="88" step="0.1" oninput="calcCPA()"></div>
+          <div class="cf"><label>TC — Taxa de conversão (%)</label><input type="number" id="cc-tc" value="4.26" step="0.01" oninput="calcCPA()"></div>
+        </div>
+        <div style="margin-top:1.25rem;background:var(--bg3);border-radius:var(--rsm);padding:1rem 1.25rem;border:1px solid rgba(201,168,76,.2)">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">CPA calculado</div>
+          <div style="font-family:var(--mono);font-size:32px;font-weight:500;color:var(--gold2)" id="cc-cpa">—</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:6px" id="cc-detalhe">—</div>
+        </div>
       </div>
-      <div class="calc-res">
-        <div class="cr"><div class="cr-l">Vendas previstas</div><div class="cr-v" id="r-v">—</div></div>
-        <div class="cr"><div class="cr-l">Fat. principal</div><div class="cr-v" id="r-f">—</div></div>
-        <div class="cr"><div class="cr-l">Order bump</div><div class="cr-v" id="r-b">—</div></div>
-        <div class="cr hi"><div class="cr-l">Total projetado</div><div class="cr-v" id="r-t">—</div></div>
-        <div class="cr"><div class="cr-l">ROAS projetado</div><div class="cr-v" id="r-r">—</div></div>
-        <div class="cr"><div class="cr-l">Lucro / Prejuízo</div><div class="cr-v" id="r-l">—</div></div>
+
+      <!-- Bloco 2: Projeção de Vendas -->
+      <div class="card">
+        <div class="card-t">Projeção de ingressos</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="cf"><label>Meta de ingressos</label><input type="number" id="cp-meta" value="200" oninput="calcProj()"></div>
+          <div class="cf"><label>Investimento disponível (R$)</label><input type="number" id="cp-inv" value="10000" oninput="calcProj()"></div>
+        </div>
+        <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="cr"><div class="cr-l">CPA ideal</div><div class="cr-v" id="cp-cpa-ideal">—</div></div>
+          <div class="cr"><div class="cr-l">Ingressos projetados</div><div class="cr-v" id="cp-proj">—</div></div>
+        </div>
       </div>
     </div>
+
+    <!-- Bloco 3: Projeção X Realidade -->
+    <div class="hcard">
+      <div class="card-t">Projeção × Realidade</div>
+      <div class="kpis" id="calc-realidade">
+        <div class="cr"><div class="cr-l">Meta de ingressos</div><div class="cr-v" id="cr-meta">—</div></div>
+        <div class="cr"><div class="cr-l">Ingressos vendidos</div><div class="cr-v kpi-up" id="cr-vendidos">—</div></div>
+        <div class="cr"><div class="cr-l">Déficit</div><div class="cr-v" id="cr-deficit">—</div></div>
+        <div class="cr"><div class="cr-l">Investimento</div><div class="cr-v" id="cr-investimento">—</div></div>
+        <div class="cr"><div class="cr-l">CPA real</div><div class="cr-v" id="cr-cpa-real">—</div></div>
+        <div class="cr"><div class="cr-l">CPA ideal</div><div class="cr-v" id="cr-cpa-ideal2">—</div></div>
+      </div>
+      <div id="cr-status" style="margin-top:1rem"></div>
+    </div>
+
   </div>
 
 </div><!-- /main -->
@@ -418,6 +455,7 @@ async function init() {
 // ── RESUMO ──────────────────────────────────────────────────
 async function carregarResumo() {
   const d = await api('resumo');
+  _resumo = d;
   const cfg = d.config || {};
   document.getElementById('ts').textContent = '↻ ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
@@ -481,15 +519,10 @@ async function carregarResumo() {
       <span style="width:8px;height:8px;border-radius:2px;background:${CORES[i]};flex-shrink:0"></span>${l} ${mv[i]}
     </span>`).join('');
 
-  // Chart vendas por dia
-  const vDias = (d.vendas_por_dia||[]).map(x => x.data.slice(5));
-  const vQtds = (d.vendas_por_dia||[]).map(x => x.qtd);
-  if (chDias) chDias.destroy();
-  chDias = new Chart(document.getElementById('ch-dias'), {
-    type:'bar',
-    data:{ labels:vDias, datasets:[{ data:vQtds, backgroundColor:'rgba(201,168,76,.7)', borderRadius:4, borderWidth:0 }] },
-    options: chartOpts()
-  });
+  // Chart vendas por dia com pace
+  window._vendasPorDia = d.vendas_por_dia || [];
+  window._cfg = cfg;
+  atualizarPace();
 
   // Metas
   renderMetas(d, cfg);
@@ -843,31 +876,151 @@ function renderUTM(rows) {
     </tr>`).join('')}</tbody></table>`;
 }
 
-// ── CALCULADORA ─────────────────────────────────────────────
-function calc() {
-  const vis  = +document.getElementById('c-vis').value  ||0;
-  const conv = +document.getElementById('c-conv').value ||0;
-  const tick = +document.getElementById('c-tick').value ||0;
-  const btx  = +document.getElementById('c-btx').value  ||0;
-  const bv   = +document.getElementById('c-bv').value   ||0;
-  const inv  = +document.getElementById('c-inv').value  ||0;
-  const v    = Math.round(vis*conv/100);
-  const f    = v*tick;
-  const b    = Math.round(v*btx/100)*bv;
-  const t    = f+b;
-  const r    = inv ? (t/inv).toFixed(2) : '—';
-  const l    = inv ? t-inv : t;
-  document.getElementById('r-v').textContent = v;
-  document.getElementById('r-f').textContent = BRL(f);
-  document.getElementById('r-b').textContent = BRL(b);
-  document.getElementById('r-t').textContent = BRL(t);
-  document.getElementById('r-r').textContent = r!=='—'?r+'x':'—';
-  document.getElementById('r-l').textContent = BRL(l);
+// ── PACE DE VENDAS ──────────────────────────────────────────
+function atualizarPace() {
+  const dados  = window._vendasPorDia || [];
+  const cfg    = window._cfg || {};
+  const metaDia = +document.getElementById('meta-diaria')?.value || 35;
+
+  if (!dados.length) return;
+
+  const labels  = dados.map(x => x.data.slice(5));
+  const vendas  = dados.map(x => x.qtd);
+  const metaArr = dados.map(() => metaDia);
+
+  // Calcula pace status
+  const hoje     = new Date();
+  const fim      = new Date(cfg.data_fim || '2026-05-11');
+  const diasRest = Math.max(0, Math.ceil((fim - hoje) / 86400000));
+  const totalV   = vendas.reduce((a,b)=>a+b,0);
+  const media    = vendas.length > 0 ? (totalV/vendas.length).toFixed(1) : 0;
+  const projecao = Math.round(media * (vendas.length + diasRest));
+  const status   = document.getElementById('pace-status');
+  if (status) {
+    const cor = media >= metaDia ? '#3ecf8e' : media >= metaDia*0.7 ? '#c9a84c' : '#f87171';
+    status.innerHTML = `<span style="color:${cor}">▸ Média atual: ${media}/dia</span>
+      <span style="margin-left:12px;color:var(--text3)">Projeção final: ~${projecao} ingressos</span>
+      <span style="margin-left:12px;color:var(--text3)">${diasRest} dias restantes</span>`;
+  }
+
+  if (chDias) chDias.destroy();
+  chDias = new Chart(document.getElementById('ch-dias'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Vendas',
+          data: vendas,
+          backgroundColor: vendas.map(v => v >= metaDia ? 'rgba(62,207,142,.75)' : 'rgba(201,168,76,.7)'),
+          borderRadius: 4,
+          borderWidth: 0,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'Meta/dia',
+          data: metaArr,
+          borderColor: '#60a5fa',
+          borderWidth: 2,
+          borderDash: [4,4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 1,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color:'#8892aa', font:{ size:10, family:"'DM Mono'" }, boxWidth:12, padding:12 }
+        }
+      },
+      scales: {
+        x: { grid:{ color:'rgba(255,255,255,.03)' }, ticks:{ color:'#535e78', font:{ size:10, family:"'DM Mono'" } } },
+        y: { grid:{ color:'rgba(255,255,255,.03)' }, ticks:{ color:'#535e78', font:{ size:10, family:"'DM Mono'" } }, beginAtZero:true }
+      }
+    }
+  });
 }
+
+// ── CALCULADORA CPA ─────────────────────────────────────────
+function calcCPA() {
+  const cpm = +document.getElementById('cc-cpm').value || 0;
+  const ctr = +document.getElementById('cc-ctr').value || 0;
+  const cr  = +document.getElementById('cc-cr').value  || 0;
+  const tc  = +document.getElementById('cc-tc').value  || 0;
+
+  if (!cpm || !ctr || !cr || !tc) return;
+
+  // A cada R$1.000 investidos:
+  const imp    = 1000 / cpm * 1000;           // impressões
+  const clicks = imp * (ctr / 100);           // cliques
+  const lp     = clicks * (cr / 100);         // chegam na LP
+  const vendas = lp * (tc / 100);             // compras
+  const cpa    = vendas > 0 ? 1000 / vendas : 0;
+
+  document.getElementById('cc-cpa').textContent = cpa ? BRL(cpa) : '—';
+  document.getElementById('cc-detalhe').textContent =
+    `A cada R$1.000: ${Math.round(imp).toLocaleString('pt-BR')} impressões → ${Math.round(clicks)} cliques → ${Math.round(lp)} LP → ${vendas.toFixed(1)} vendas`;
+
+  calcProj();
+  calcRealidade();
+}
+
+function calcProj() {
+  const meta = +document.getElementById('cp-meta').value || 0;
+  const inv  = +document.getElementById('cp-inv').value  || 0;
+
+  const cpaIdeal = meta > 0 ? inv / meta : 0;
+  const cpa      = +document.getElementById('cc-cpa')?.textContent?.replace(/[^0-9,]/g,'').replace(',','.') || 0;
+  const proj     = cpa > 0 ? Math.floor(inv / cpa) : 0;
+
+  document.getElementById('cp-cpa-ideal').textContent = cpaIdeal ? BRL(cpaIdeal) : '—';
+  document.getElementById('cp-proj').textContent = proj || '—';
+
+  calcRealidade();
+}
+
+function calcRealidade() {
+  const meta    = +document.getElementById('cp-meta').value || 0;
+  const inv     = +document.getElementById('cp-inv').value  || 0;
+  const vendidos= _resumo ? (_resumo.qtd_vendas || 0) : 0;
+  const spent   = _trafego && _trafego.resumo ? (_trafego.resumo.total_spent || 0) : 0;
+  const deficit = Math.max(0, meta - vendidos);
+  const cpaReal = vendidos > 0 && spent > 0 ? spent / vendidos : 0;
+  const cpaIdeal= meta > 0 && inv > 0 ? inv / meta : 0;
+
+  document.getElementById('cr-meta').textContent       = meta || '—';
+  document.getElementById('cr-vendidos').textContent   = vendidos;
+  document.getElementById('cr-deficit').textContent    = deficit > 0 ? deficit : '✅ Meta atingida!';
+  document.getElementById('cr-investimento').textContent = spent ? BRL(spent) : '—';
+  document.getElementById('cr-cpa-real').textContent   = cpaReal  ? BRL(cpaReal)  : '—';
+  document.getElementById('cr-cpa-ideal2').textContent = cpaIdeal ? BRL(cpaIdeal) : '—';
+
+  // Status
+  const pct = meta > 0 ? (vendidos/meta*100).toFixed(1) : 0;
+  const cor  = vendidos >= meta ? 'var(--green)' : vendidos >= meta*0.7 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('cr-status').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
+        <div style="height:100%;background:${cor};width:${Math.min(100,pct)}%;border-radius:3px;transition:width 1s"></div>
+      </div>
+      <span style="font-family:var(--mono);font-size:12px;color:${cor};min-width:40px">${pct}%</span>
+    </div>`;
+}
+
+// Alias para manter compatibilidade
+function calc() { calcCPA(); }
 
 // ── BOOT ────────────────────────────────────────────────────
 init();
-calc();
+calcCPA();
 setInterval(()=>{ carregarResumo(); carregarVendas(); }, 60000);
 </script>
 </body>
