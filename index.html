@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Launch HQ — Ingressos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root {
-  --bg:      #0a0c10;
-  --bg2:     #111318;
-  --bg3:     #181c24;
-  --bg4:     #1f2433;
-  --border:  rgba(255,255,255,0.06);
-  --border2: rgba(255,255,255,0.1);
-  --text:    #e8ecf5;
-  --text2:   #7a8299;
-  --text3:   #404860;
+  --bg:      #0f1117;
+  --bg2:     #161b27;
+  --bg3:     #1e2435;
+  --bg4:     #252d42;
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text:    #e2e8f5;
+  --text2:   #8892aa;
+  --text3:   #535e78;
   --gold:    #c9a84c;
   --gold2:   #e8c96a;
   --gold3:   rgba(201,168,76,0.12);
@@ -31,7 +31,7 @@
   --r:       10px;
   --rsm:     7px;
   --mono:    'DM Mono', monospace;
-  --display: 'Syne', sans-serif;
+  --display: 'DM Sans', sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--display); background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -47,7 +47,7 @@ body { font-family: var(--display); background: var(--bg); color: var(--text); m
   background: var(--bg);
   position: sticky; top: 0; z-index: 100;
 }
-.logo { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--gold); letter-spacing: .1em; }
+.logo { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--green); letter-spacing: .1em; }
 .sep  { width: 1px; height: 16px; background: var(--border2); margin: 0 12px; }
 .topbar-title { font-size: 13px; font-weight: 600; color: var(--text2); letter-spacing: .02em; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
@@ -68,13 +68,13 @@ body { font-family: var(--display); background: var(--bg); color: var(--text); m
 }
 .nav::-webkit-scrollbar { height: 0; }
 .nbtn {
-  font-family: var(--display); font-size: 12px; font-weight: 600;
-  padding: 5px 14px; border-radius: 20px; border: 1px solid transparent;
+  font-family: var(--display); font-size: 13px; font-weight: 500;
+  padding: 6px 16px; border-radius: 20px; border: 1px solid transparent;
   background: transparent; color: var(--text2); cursor: pointer;
-  white-space: nowrap; transition: all .15s; letter-spacing: .02em;
+  white-space: nowrap; transition: all .15s; letter-spacing: 0;
 }
 .nbtn:hover { color: var(--text); background: var(--bg3); }
-.nbtn.active { background: var(--bg3); color: var(--gold); border-color: rgba(201,168,76,.25); }
+.nbtn.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
 
 /* ── LAYOUT ── */
 .main { padding: 1.5rem 2rem; max-width: 1440px; }
@@ -91,13 +91,13 @@ body { font-family: var(--display); background: var(--bg); color: var(--text); m
 }
 .kpi::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, var(--gold), transparent);
+  background: linear-gradient(90deg, var(--green), transparent);
   opacity: 0; transition: opacity .2s;
 }
 .kpi:hover::before { opacity: 1; }
 .kpi:hover { border-color: rgba(201,168,76,.2); }
-.kpi-l { font-family: var(--mono); font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 8px; }
-.kpi-v { font-family: var(--mono); font-size: 21px; font-weight: 500; color: var(--text); line-height: 1; }
+.kpi-l { font-family: var(--sans, var(--display)); font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text2); margin-bottom: 6px; }
+.kpi-v { font-family: var(--mono); font-size: 24px; font-weight: 500; color: var(--text); line-height: 1; letter-spacing: -.02em; }
 .kpi-s { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 5px; }
 .kpi-up   { color: var(--green) !important; }
 .kpi-down { color: var(--red) !important; }
@@ -113,34 +113,35 @@ body { font-family: var(--display); background: var(--bg); color: var(--text); m
   border-radius: var(--r); padding: 1.25rem; margin-bottom: 14px;
 }
 .card-t {
-  font-family: var(--mono); font-size: 9px; font-weight: 500;
-  text-transform: uppercase; letter-spacing: .08em; color: var(--text3);
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text3);
   margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: .75rem; border-bottom: 1px solid var(--border);
 }
 
 /* ── FUNIL ── */
-.funnel-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: .5rem 0; }
-.funnel-step-wrap { width: 100%; display: flex; align-items: center; gap: 12px; }
-.funnel-bar-wrap { flex: 1; display: flex; justify-content: center; }
+.funnel-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; padding: .25rem 0; }
+.funnel-row { width: 100%; display: flex; flex-direction: column; align-items: center; }
 .funnel-bar {
-  background: linear-gradient(135deg, var(--gold) 0%, #a07830 100%);
-  border-radius: 6px; padding: 10px 20px;
+  background: linear-gradient(90deg, #b8943e 0%, #d4aa55 40%, #c9a84c 60%, #a07830 100%);
+  border-radius: 6px; padding: 12px 24px;
   display: flex; align-items: center; justify-content: space-between;
-  gap: 20px; transition: all .3s ease; cursor: default;
-  position: relative; overflow: hidden;
-  box-shadow: 0 2px 12px rgba(201,168,76,.15);
+  gap: 16px; cursor: default; position: relative; overflow: hidden;
+  box-shadow: 0 2px 16px rgba(201,168,76,.2);
+  transition: box-shadow .2s;
 }
-.funnel-bar::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.1) 0%, transparent 60%);
+.funnel-bar:hover { box-shadow: 0 4px 24px rgba(201,168,76,.4); }
+.funnel-bar-left { display: flex; flex-direction: column; gap: 2px; }
+.funnel-bar-right { text-align: right; flex-shrink: 0; }
+.funnel-name { font-family: var(--mono); font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.75); }
+.funnel-val  { font-family: var(--mono); font-size: 22px; font-weight: 500; color: #ffffff; line-height: 1.1; }
+.funnel-pct  { font-family: var(--mono); font-size: 12px; font-weight: 500; color: #ffffff; }
+.funnel-sub  { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,.6); margin-top: 2px; }
+.funnel-connector {
+  width: 2px; height: 10px;
+  background: linear-gradient(180deg, rgba(201,168,76,.6), rgba(201,168,76,.1));
+  margin: 0 auto;
 }
-.funnel-bar:hover { transform: scaleY(1.03); box-shadow: 0 4px 20px rgba(201,168,76,.3); }
-.funnel-name { font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.8); }
-.funnel-val  { font-family: var(--mono); font-size: 18px; font-weight: 500; color: #fff; }
-.funnel-meta { text-align: right; min-width: 80px; }
-.funnel-pct  { font-family: var(--mono); font-size: 11px; color: var(--text2); }
-.funnel-sub  { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 2px; }
-.funnel-arrow { color: var(--text3); font-size: 14px; margin: 0 auto; }
 
 /* ── TABELA ── */
 .tw { overflow-x: auto; }
@@ -499,21 +500,19 @@ function renderFunilMain(d) {
   const widths = ['100%','88%','72%','54%'];
 
   document.getElementById('funil-main').innerHTML = steps.map((s,i) => `
-    <div class="funnel-step-wrap">
-      <div class="funnel-bar-wrap" style="width:${widths[i]}">
-        <div class="funnel-bar" style="width:100%">
-          <div>
-            <div class="funnel-name">${s.nome}</div>
-            <div class="funnel-val">${s.val}</div>
-          </div>
-          <div class="funnel-meta">
-            <div class="funnel-pct">${s.pct}</div>
-            ${s.ctr ? `<div class="funnel-sub">${s.ctr}</div>` : ''}
-          </div>
+    <div class="funnel-row">
+      <div class="funnel-bar" style="width:${widths[i]}">
+        <div class="funnel-bar-left">
+          <div class="funnel-name">${s.nome}</div>
+          <div class="funnel-val">${s.val}</div>
+          ${s.ctr ? `<div class="funnel-sub">${s.ctr}</div>` : ''}
+        </div>
+        <div class="funnel-bar-right">
+          <div class="funnel-pct">${s.pct}</div>
         </div>
       </div>
+      ${i < steps.length-1 ? '<div class="funnel-connector"></div>' : ''}
     </div>
-    ${i < steps.length-1 ? '<div class="funnel-arrow">▼</div>' : ''}
   `).join('');
 }
 
