@@ -442,16 +442,29 @@ async function carregarResumo() {
   renderFunilMain(d);
 
   // Produtos
+  const totalVendas = d.qtd_vendas || 1;
   document.getElementById('lista-prod').innerHTML = (d.por_produto||[]).length
-    ? (d.por_produto||[]).map(p => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:13px;color:var(--text2)">${enc(p.nome)}</span>
-          <span style="display:flex;gap:12px;align-items:center">
-            <span style="font-family:var(--mono);font-size:13px">${p.qtd} un</span>
+    ? (d.por_produto||[]).map(p => {
+        const pctProd = (p.qtd / totalVendas * 100).toFixed(1);
+        const isOB = p.nome.includes('Lista') || p.nome.includes('Catálogo') || p.nome.includes('Catalogo');
+        return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px">
+              ${enc(p.nome)}
+              ${isOB ? '<span class="tag ta">order bump</span>' : '<span class="tag tg">principal</span>'}
+            </span>
+            <span style="font-family:var(--mono);font-size:13px;font-weight:500">${p.qtd} un <span style="color:var(--text3);font-size:11px">(${pctProd}%)</span></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-right:12px">
+              <div style="height:100%;background:${isOB?'var(--gold)':'var(--green)'};width:${pctProd}%;border-radius:2px"></div>
+            </div>
             <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${BRL(p.total)}</span>
-            <span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${BRL(p.liquido)} liq.</span>
-          </span>
-        </div>`).join('')
+            <span style="font-family:var(--mono);font-size:11px;color:var(--gold);margin-left:8px">${BRL(p.liquido)} liq.</span>
+          </div>
+        </div>`;
+      }).join('')
     : '<div class="spin">sem vendas ainda</div>';
 
   // Chart métodos
@@ -483,35 +496,57 @@ async function carregarResumo() {
 }
 
 function renderFunilMain(d) {
-  const t = _trafego && _trafego.resumo ? _trafego.resumo : {};
-  const imp   = t.total_impressions || 0;
-  const clicks= t.total_clicks      || 0;
-  const lp    = t.total_lp_views    || 0;
-  const vendas= d.qtd_vendas        || 0;
+  const t   = _trafego && _trafego.resumo ? _trafego.resumo : {};
+  const imp = t.total_impressions || 0;
+  const clk = t.total_clicks      || 0;
+  const lp  = t.total_lp_views    || 0;
+  const ck  = t.total_checkouts   || 0;
+  const ven = d.qtd_vendas        || 0;
+
+  // Métricas laterais exatas da referência
+  const cpm          = t.cpm   ? 'CPM '+BRL(t.cpm)  : '';
+  const taxa_conexao = clk && lp  ? PCT(lp/clk*100)+' taxa de conexão' : '—';
+  const lp_checkout  = lp  && ck  ? PCT(ck/lp*100)+' PV→Checkout'     : '—';
+  const ck_venda     = ck  && ven ? PCT(ven/ck*100)+' Checkout→Venda'  : '—';
+  const lp_venda     = lp  && ven ? PCT(ven/lp*100)+' PV→Venda'        : '—';
 
   const steps = [
-    { nome:'Impressões',    val: NUM(imp),    pct:'100%',                                        ctr: imp ? 'CPM '+BRL(t.cpm||0) : '' },
-    { nome:'Cliques',       val: NUM(clicks), pct: imp    ? PCT(clicks/imp*100)+' CTR'    : '—', ctr: clicks ? 'CPC '+BRL(t.cpc||0) : '' },
-    { nome:'LP Views',      val: NUM(lp),     pct: clicks ? PCT(lp/clicks*100)+' conn.'  : '—', ctr: '' },
-    { nome:'Vendas tráfego',val: NUM(vendas), pct: lp     ? PCT(vendas/lp*100)+' conv.'  : '—', ctr: vendas ? 'CPA '+BRL(t.cpp||0) : '' },
+    { nome:'IMPRESSÕES',     val: NUM(imp), meta: cpm,         lado_dir: '' },
+    { nome:'CLIQUES',        val: NUM(clk), meta: t.ctr?PCT(t.ctr)+' CTR':'—', lado_dir: taxa_conexao },
+    { nome:'PAGEVIEW',       val: NUM(lp),  meta: '',          lado_dir: lp_checkout },
+    { nome:'CHECKOUTS',      val: NUM(ck),  meta: '',          lado_dir: ck_venda },
+    { nome:'VENDAS TRÁFEGO', val: NUM(ven), meta: lp_venda,    lado_dir: '', last:true },
   ];
 
-  // Larguras decrescentes para forma de funil
-  const widths = ['100%','88%','72%','54%'];
+  const widths = [100, 88, 74, 60, 46];
 
   document.getElementById('funil-main').innerHTML = steps.map((s,i) => `
-    <div class="funnel-row">
-      <div class="funnel-bar" style="width:${widths[i]}">
-        <div class="funnel-bar-left">
-          <div class="funnel-name">${s.nome}</div>
-          <div class="funnel-val">${s.val}</div>
-          ${s.ctr ? `<div class="funnel-sub">${s.ctr}</div>` : ''}
+    <div class="funnel-row" style="width:100%;display:flex;flex-direction:column;align-items:center;">
+      <div style="width:100%;display:flex;align-items:center;gap:8px;justify-content:center;">
+        <!-- lado esquerdo vazio (simetria) -->
+        <div style="min-width:120px;text-align:right;">
+          ${i===4 ? `<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${s.meta}</span>` : ''}
         </div>
-        <div class="funnel-bar-right">
-          <div class="funnel-pct">${s.pct}</div>
+        <!-- barra -->
+        <div style="width:${widths[i]}%;background:linear-gradient(90deg,#b8943e,#d4aa55,#c9a84c,#a07830);
+          border-radius:6px;padding:11px 20px;
+          display:flex;align-items:center;justify-content:space-between;
+          box-shadow:0 2px 16px rgba(201,168,76,.2);position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 50%);pointer-events:none"></div>
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <div style="font-family:var(--mono);font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:rgba(0,0,0,.65);">${s.nome}</div>
+            <div style="font-family:var(--mono);font-size:20px;font-weight:500;color:#000;line-height:1.1;">${s.val}</div>
+          </div>
+          <div style="text-align:right;">
+            ${s.meta && i!==4 ? `<div style="font-family:var(--mono);font-size:11px;color:rgba(0,0,0,.6);">${s.meta}</div>` : ''}
+          </div>
+        </div>
+        <!-- lado direito: métricas de conversão -->
+        <div style="min-width:120px;text-align:left;">
+          ${s.lado_dir ? `<span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${s.lado_dir}</span>` : ''}
         </div>
       </div>
-      ${i < steps.length-1 ? '<div class="funnel-connector"></div>' : ''}
+      ${i < steps.length-1 ? `<div style="width:2px;height:8px;background:linear-gradient(180deg,rgba(201,168,76,.5),transparent);margin:0 auto;"></div>` : ''}
     </div>
   `).join('');
 }
