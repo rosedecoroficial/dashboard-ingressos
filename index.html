@@ -414,7 +414,7 @@ tbody tr:hover td { background: var(--bg3); }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygWlf3RrONmCkFjByt1LQSgFoa4aAIPFfixiUddBG-YKYuyWm4EyMzTY3vCdzsvpGG3w/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzltwmX-hxxPNv6CFXtuEuexNHZDuIekYPuSBGoms28-AU69IwmqrjgckRFh9eFBP2pWw/exec';
 // ────────────────────────────────────────────────────────────
 
 const BRL  = v => 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -424,7 +424,7 @@ const CORES = ['#c9a84c','#3ecf8e','#60a5fa','#f87171','#a78bfa','#fb923c','#34d
 const MET   = { pix:'PIX', credit_card:'Cartão', boleto:'Boleto' };
 
 let chDias=null, chGasto=null, chMet=null;
-let _trafego=null, _vendas=[];
+let _trafego=null, _vendas=[], _resumo=null;
 
 function showTab(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
