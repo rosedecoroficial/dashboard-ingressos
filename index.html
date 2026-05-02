@@ -474,7 +474,7 @@ async function carregarResumo() {
     kpi('Faturamento líquido', BRL(d.faturamento_liquido), 'kpi-gold'),
     kpi('Lucro / Prejuízo', spentT ? BRL(lucro) : '—', lucro >= 0 ? 'kpi-up' : 'kpi-down'),
     kpi('Alunos do curso', NUM(d.qtd_alunos||d.qtd_vendas), '', cfg.meta_vendas ? NUM(cfg.meta_vendas)+' meta' : ''),
-    kpi('Vendas totais', NUM(d.qtd_vendas_geral||d.qtd_vendas), ''),
+    kpi('Itens vendidos', NUM((d.por_produto||[]).reduce((s,p)=>s+p.qtd,0)||d.qtd_vendas), ''),
     kpi('Ticket médio', BRL(d.ticket_medio), ''),
     kpi('Ticket líquido', BRL(d.ticket_medio_liquido), ''),
     kpi('% Order Bump', PCT(d.orderbump_taxa), d.orderbump_taxa >= 30 ? 'kpi-up' : ''),
@@ -489,7 +489,7 @@ async function carregarResumo() {
   document.getElementById('lista-prod').innerHTML = (d.por_produto||[]).length
     ? (d.por_produto||[]).map(p => {
         const pctProd = (p.qtd / totalVendas * 100).toFixed(1);
-        const isOB = p.nome.includes('Lista') || p.nome.includes('Catálogo') || p.nome.includes('Catalogo');
+        const isOB = p.nome.includes('Lista') || p.nome.includes('Catálogo') || p.nome.includes('Catalogo') || p.nome.includes('Gravação') || p.nome.includes('Gravacao');
         return `
         <div style="padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
